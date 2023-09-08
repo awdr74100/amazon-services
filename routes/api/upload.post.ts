@@ -1,7 +1,11 @@
 export default eventHandler(async (event) => {
-  const body = await readMultipartFormData(event);
+  try {
+    const body = await readMultipartFormData(event);
 
-  console.log(body);
+    console.log(body);
 
-  return { message: "Hello World" };
+    return { success: true };
+  } catch (error) {
+    return { success: false };
+  }
 });

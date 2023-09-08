@@ -7,6 +7,11 @@
     "preview": "node .output/server/index.mjs"
   },
   "dependencies": {
+    "@prisma/client": "5.2.0",
+    "argon2": "^0.31.1",
     "nitropack": "latest"
+  },
+  "devDependencies": {
+    "prisma": "^5.2.0"
   }
 }
