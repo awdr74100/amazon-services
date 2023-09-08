@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>aws</title>
+  </head>
+  <body>
+    <!-- AWS S3 -->
+    <h2>Amazon S3</h2>
+    <form action="#" id="s3Form">
+      <input type="file" multiple />
+      <button type="submit">上傳</button>
+    </form>
+    <!-- AWS SES -->
+    <h2>Amazon SES</h2>
+    <form action="#" id="sesForm">
+      <input type="text" placeholder="郵件標題" class="title" />
+      <input type="text" placeholder="郵件內容" class="content" />
+      <button type="submit">傳送</button>
+    </form>
+    <script>
+      const s3Form = document.querySelector("#s3Form");
+
+      s3Form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const files = [...document.querySelector("#s3Form input").files];
+
+        const formData = new FormData();
+
+        files.forEach((file) => {
+          formData.append("files", file);
+        });
+
+        try {
+          const url = "http://127.0.0.1:3000/api";
+          const result = await fetch(`${url}/upload`, {
+            method: "post",
+            body: formData,
+          }).then((res) => res.json());
+
+          console.log(result);
+        } catch (error) {
+          console.log(error);
+        }
+      });
+
+      const sesForm = document.querySelector("#sesForm");
+
+      sesForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const title = document.querySelector("#sesForm .title").value;
+        const content = document.querySelector("#sesForm .content").value;
+
+        try {
+          const url = "http://127.0.0.1:3000/api";
+          const result = await fetch(`${url}/mail`, {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            method: "post",
+            body: JSON.stringify({ title, content }),
+          }).then((res) => res.json());
+
+          console.log(result);
+        } catch (error) {
+          console.log(error);
+        }
+      });
+    </script>
+  </body>
+</html>
