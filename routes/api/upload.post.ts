@@ -1,47 +1,52 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { nanoid } from "nanoid";
 
 export default eventHandler(async (event) => {
-  const config = useRuntimeConfig();
+  const {
+    AWS_S3_BUCKET,
+    AWS_S3_REGION,
+    AWS_ACCESS_KEY_ID,
+    AWS_SECRET_ACCESS_KEY,
+  } = useRuntimeConfig();
 
   const s3Client = new S3Client({
-    region: config.AWS_S3_REGION,
+    region: AWS_S3_REGION,
     credentials: {
-      accessKeyId: config.AWS_ACCESS_KEY_ID,
-      secretAccessKey: config.AWS_SECRET_ACCESS_KEY,
+      accessKeyId: AWS_ACCESS_KEY_ID,
+      secretAccessKey: AWS_SECRET_ACCESS_KEY,
     },
   });
 
-  const params = {
-    Bucket: config.AWS_S3_BUCKET, // The name of the bucket. For example, 'sample-bucket-101'.
-    Key: "KEY", // The name of the object. For example, 'sample_upload.txt'.
-    Body: "BODY", // The content of the object. For example, 'Hello world!".
-  };
-
   try {
-    const body = await readMultipartFormData(event);
+    const multipartFormData = await readMultipartFormData(event);
 
-    const folder = "images";
-    const ext = body[0].filename.split(".")[1];
-    const buffer = body[0].data;
-    const name = `${Date.now()}-endgame.${ext}`;
-    console.log(ext);
+    const urls = [];
 
-    const data = await s3Client.send(
-      new PutObjectCommand({
-        ACL: "public-read",
-        Bucket: config.AWS_S3_BUCKET,
-        Body: buffer,
-        Key: `${folder}/${name}`,
+    const result = await Promise.all(
+      multipartFormData.map(({ name, filename, data, type }) => {
+        const folder = name;
+        const fileName = `${Date.now()}-${nanoid()}.${filename.split(".")[1]}`;
+        const fileBuffer = data;
+        const fileContentType = type;
+
+        const url = `https://${AWS_S3_BUCKET}.s3.${AWS_S3_REGION}.amazonaws.com/${folder}/${fileName}`;
+        urls.push(url);
+
+        const command = new PutObjectCommand({
+          Bucket: AWS_S3_BUCKET,
+          Key: `${folder}/${fileName}`,
+          Body: fileBuffer,
+          ContentType: fileContentType,
+          ACL: "public-read",
+        });
+
+        return s3Client.send(command);
       })
     );
 
-    console.log(data);
-    // console.log(body);
-    const url = `https://${config.AWS_S3_BUCKET}.s3.${config.AWS_S3_REGION}.amazonaws.com/${folder}/${name}`;
+    console.log(result);
 
-    // https://ucct.s3.ap-east-1.amazonaws.com/images/1694201541436-endgame.jpg
-
-    return { success: true, urls: [url] };
+    return { success: true, urls };
   } catch (error) {
     console.log(error);
     return { success: false };
